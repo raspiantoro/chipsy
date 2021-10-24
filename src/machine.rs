@@ -9,7 +9,7 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn New() -> Self {
+    pub fn new() -> Self {
         Machine {
             cpu: CPU::default(),
             memory: Memory::new(),
@@ -33,7 +33,6 @@ impl Machine {
         self.cpu.v_reg_get(index)
     }
 
-    // temp method
     pub fn run(&mut self) {
         loop {
             let first = self.memory.get(self.cpu.get_pc());
