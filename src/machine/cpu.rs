@@ -1,5 +1,7 @@
 use self::instructions::execute;
 
+use super::Machine;
+
 mod instructions;
 
 #[derive(Default)]
@@ -34,7 +36,7 @@ impl CPU {
         self.pc += 2;
     }
 
-    pub fn run(&mut self, opcode: u16) {
-        execute(self, opcode);
+    pub fn run(machine: &mut Machine, opcode: u16) {
+        execute(machine, opcode);
     }
 }
