@@ -1,11 +1,20 @@
-use self::{cpu::CPU, memory::Memory};
+use sdl2::{event::Event, keyboard::Keycode};
+
+use crate::utils::media::{self, canvas::MediaCanvas, event::MediaEvent, RGB};
+
+use self::{cpu::CPU, memory::Memory, screen::Screen};
 
 pub mod cpu;
 pub mod memory;
+pub mod screen;
 
-static mut CLEAR_SCREEN: u8 = 0;
-static FONTSET_ADDR: u16 = 0x50;
-static FONT_SET: [u8; 80] = [
+const UI_SCALE: u32 = 20;
+const BG_COLOR: RGB = RGB(0, 0, 0);
+const PX_COLOR: RGB = RGB(51, 255, 51);
+const WINDOW_WIDHT: u32 = 64;
+const WINDOW_HEIGHT: u32 = 32;
+const FONTSET_ADDR: u16 = 0x50;
+const FONT_SET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -27,13 +36,22 @@ static FONT_SET: [u8; 80] = [
 pub struct Machine {
     cpu: CPU,
     memory: Memory,
+    display: MediaCanvas,
+    event: MediaEvent,
+    screen: Screen,
 }
 
 impl Machine {
     pub fn new() -> Self {
+        let (display, event) =
+            media::init(BG_COLOR, PX_COLOR, WINDOW_WIDHT, WINDOW_HEIGHT, UI_SCALE);
+
         Machine {
             cpu: CPU::default(),
             memory: Memory::new(),
+            display: display,
+            event: event,
+            screen: Screen::new(),
         }
     }
 
@@ -46,6 +64,8 @@ impl Machine {
             self.mem_assign((FONTSET_ADDR as usize) + counter, FONT_SET[counter]);
             counter += 1;
         }
+
+        self.display.draw()
     }
 
     // temp method for simplicity
@@ -61,8 +81,26 @@ impl Machine {
         self.cpu.v_reg_get(index)
     }
 
+    // should be delete after tests
+    pub fn i_reg_set(&mut self, value: u16) {
+        self.cpu.i_reg_set(value);
+    }
+
     pub fn run(&mut self) {
-        loop {
+        'running: loop {
+            for event in self.event.to_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => {
+                        break 'running;
+                    }
+                    _ => {}
+                }
+            }
+
             let first = self.memory.get(self.cpu.get_pc());
             let two = self.memory.get(self.cpu.get_pc() + 1);
             self.cpu.inc_pc();
@@ -75,10 +113,13 @@ impl Machine {
 
             CPU::run(self, opcode);
 
-            if unsafe { CLEAR_SCREEN == 1 } {
-                // add clear screen operations later
-                unsafe { CLEAR_SCREEN = 0 }
+            for (y, row) in self.screen.get_pixels().iter().enumerate() {
+                for (x, col) in row.iter().enumerate() {
+                    self.display.set_pixel(x as u32, y as u32, col)
+                }
             }
+
+            self.display.draw();
         }
     }
 }

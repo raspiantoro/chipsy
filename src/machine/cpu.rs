@@ -28,6 +28,11 @@ impl CPU {
         self.v[index]
     }
 
+    // should be delete after tests
+    pub fn i_reg_set(&mut self, value: u16) {
+        self.i = value
+    }
+
     pub fn get_pc(&self) -> usize {
         self.pc
     }

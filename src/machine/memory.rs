@@ -14,4 +14,10 @@ impl Memory {
     pub fn get(&self, pos: usize) -> u8 {
         self.cell[pos]
     }
+
+    pub fn get_range(&self, address: usize, len: usize) -> Vec<u8> {
+        let mut res: Vec<u8> = vec![0; len];
+        res.clone_from_slice(&self.cell[address..(address + len)]);
+        res
+    }
 }

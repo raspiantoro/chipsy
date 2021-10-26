@@ -1,2 +1,2 @@
 pub mod machine;
-pub mod ui;
+pub mod utils;
