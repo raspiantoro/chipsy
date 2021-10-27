@@ -21,18 +21,28 @@ impl Screen {
 
     pub fn set_pixels(&mut self, x: usize, y: usize, sprites: Vec<u8>) -> bool {
         let mut collision = false;
-        for (row, val) in sprites.iter().enumerate() {
-            let byte = *val >> 4;
-            for col in 0..4 {
-                let pixel = (byte & (0b1000 >> col)) >> 3 - col;
+
+        for (row, byte) in sprites.iter().enumerate() {
+            for col in 0..8 {
+                let (x_pos, y_pos) = (
+                    (x + col) % WINDOW_WIDHT as usize,
+                    (y + row) % WINDOW_HEIGHT as usize,
+                );
+
+                let pixel = (byte & (0b_1000_0000 >> col)) >> 7 - col;
+
+                if pixel == 0 {
+                    continue;
+                }
+
                 let mut xored = 0;
 
-                if self.pixels[y + row][x + col] == 1 && pixel == 1 {
+                if self.pixels[y_pos][x_pos] == 1 && pixel == 1 {
                     collision = true;
                     xored = 1;
                 }
 
-                self.pixels[y + row][x + col] = pixel ^ xored;
+                self.pixels[y_pos][x_pos] = pixel ^ xored;
             }
         }
 

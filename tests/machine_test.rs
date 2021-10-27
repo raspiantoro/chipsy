@@ -1,9 +1,10 @@
-use rchip::machine::Machine;
+use rchip::{machine::Machine, rom::RomBytes};
 
 #[test]
 fn test_run() {
+    let rom_data = RomBytes::new();
     let mut machine = Machine::new();
-    machine.init();
+    machine.init(rom_data);
 
     // try to added register V5 and V2
     // the result should be stored in register V5

@@ -1,9 +1,8 @@
-pub mod canvas;
-pub mod event;
-
+use self::{canvas::MediaCanvas, event::MediaEvent};
 use sdl2::{video::Window, Sdl};
 
-use self::{canvas::MediaCanvas, event::MediaEvent};
+pub mod canvas;
+pub mod event;
 
 pub struct RGB(pub u8, pub u8, pub u8);
 

@@ -1,6 +1,5 @@
+use crate::machine::Machine;
 use std::borrow::{Borrow, BorrowMut};
-
-use crate::machine::{self, Machine};
 
 use super::CPU;
 

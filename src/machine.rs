@@ -1,8 +1,10 @@
-use sdl2::{event::Event, keyboard::Keycode};
-
-use crate::utils::media::{self, canvas::MediaCanvas, event::MediaEvent, RGB};
-
 use self::{cpu::CPU, memory::Memory, screen::Screen};
+use crate::{
+    rom::RomBytes,
+    utils::media::{self, canvas::MediaCanvas, event::MediaEvent, RGB},
+};
+use sdl2::{event::Event, keyboard::Keycode};
+use std::{thread::sleep, time::Duration};
 
 pub mod cpu;
 pub mod memory;
@@ -55,7 +57,7 @@ impl Machine {
         }
     }
 
-    pub fn init(&mut self) {
+    pub fn init(&mut self, rom_data: RomBytes) {
         self.cpu.init();
 
         let mut counter = 0;
@@ -65,7 +67,15 @@ impl Machine {
             counter += 1;
         }
 
+        self.load_program(rom_data);
+
         self.display.draw()
+    }
+
+    fn load_program(&mut self, rom_data: RomBytes) {
+        for (i, byte) in rom_data.into_iter().enumerate() {
+            self.mem_assign(self.cpu.get_pc() + i, byte);
+        }
     }
 
     // temp method for simplicity
@@ -84,6 +94,20 @@ impl Machine {
     // should be delete after tests
     pub fn i_reg_set(&mut self, value: u16) {
         self.cpu.i_reg_set(value);
+    }
+
+    pub fn run_temp(&mut self) {
+        let first = self.memory.get(self.cpu.get_pc());
+        let two = self.memory.get(self.cpu.get_pc() + 1);
+        self.cpu.inc_pc();
+
+        let opcode: u16 = ((first as u16) << 8) | two as u16;
+
+        if opcode == 0 {
+            return;
+        }
+
+        CPU::run(self, opcode);
     }
 
     pub fn run(&mut self) {
@@ -113,6 +137,8 @@ impl Machine {
 
             CPU::run(self, opcode);
 
+            self.display.prepare();
+
             for (y, row) in self.screen.get_pixels().iter().enumerate() {
                 for (x, col) in row.iter().enumerate() {
                     self.display.set_pixel(x as u32, y as u32, col)
@@ -120,6 +146,8 @@ impl Machine {
             }
 
             self.display.draw();
+
+            sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
 }

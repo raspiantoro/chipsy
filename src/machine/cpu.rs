@@ -1,5 +1,4 @@
 use self::instructions::execute;
-
 use super::Machine;
 
 mod instructions;
