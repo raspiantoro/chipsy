@@ -10,7 +10,7 @@ pub struct CPU {
     st: u8,
     dt: u8,
     pc: usize,
-    sp: u8,
+    sp: usize,
     stack: [u16; 16],
 }
 
@@ -30,6 +30,22 @@ impl CPU {
     // should be delete after tests
     pub fn i_reg_set(&mut self, value: u16) {
         self.i = value
+    }
+
+    pub fn get_dt(&self) -> u8 {
+        self.dt
+    }
+
+    pub fn dec_dt(&mut self) {
+        self.dt -= 1
+    }
+
+    pub fn get_st(&self) -> u8 {
+        self.st
+    }
+
+    pub fn reset_st(&mut self) {
+        self.st = 0
     }
 
     pub fn get_pc(&self) -> usize {

@@ -1,7 +1,4 @@
-use rchip::{
-    machine::Machine,
-    rom::{self, RomBytes},
-};
+use rchip::{machine::Machine, rom};
 
 #[cfg(target_os = "windows")]
 const USAGE: &str = "
@@ -26,4 +23,23 @@ fn main() {
     machine.init(rom_data);
 
     machine.run();
+
+    // let a: u8 = 156;
+    // // let b: u8 = 4;
+
+    // // let (val, borrow) = a.overflowing_sub(b);
+    // // a = val;
+
+    // // let val: u8 = a << 1;
+
+    // println!(
+    //     "hundreds: {}, tens: {}, ones: {}",
+    //     a / 100,
+    //     (a / 10) % 10,
+    //     (a % 100) % 10
+    // );
+
+    // for i in 0..=10 as u8 {
+    //     println!("Test: {}", 3 + i)
+    // }
 }

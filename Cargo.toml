@@ -7,3 +7,5 @@ edition = "2018"
 
 [dependencies]
 sdl2 = "0.30.0"
+rand = "0.8.4"
+beep = "0.3.0"

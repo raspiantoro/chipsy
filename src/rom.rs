@@ -36,19 +36,19 @@ pub fn dummy_rom_data() -> RomBytes {
     let mut rom_data = RomBytes::new();
 
     rom_data.push(0x00);
-    rom_data.push(0xe0);
+    rom_data.push(0xe0); // CLS
     rom_data.push(0x61);
-    rom_data.push(0x14);
+    rom_data.push(0x14); // LD v1, 0x14
     rom_data.push(0x62);
-    rom_data.push(0x0a);
+    rom_data.push(0x0a); // LD v2, 0x0a
     rom_data.push(0xa0);
-    rom_data.push(0x50);
+    rom_data.push(0x50); // LD i, 0x050
     rom_data.push(0x00);
-    rom_data.push(0xe0);
+    rom_data.push(0xe0); // CLS
     rom_data.push(0xD1);
-    rom_data.push(0x25);
+    rom_data.push(0x25); // DRW v1, v2, 0x5
     rom_data.push(0x12);
-    rom_data.push(0x08);
+    rom_data.push(0x08); // JP 0x208
 
     rom_data
 }

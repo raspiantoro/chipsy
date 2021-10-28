@@ -1,4 +1,4 @@
-use self::{cpu::CPU, memory::Memory, screen::Screen};
+use self::{cpu::CPU, keyboard::Keyboard, memory::Memory, screen::Screen};
 use crate::{
     rom::RomBytes,
     utils::media::{self, canvas::MediaCanvas, event::MediaEvent, RGB},
@@ -7,6 +7,7 @@ use sdl2::{event::Event, keyboard::Keycode};
 use std::{thread::sleep, time::Duration};
 
 pub mod cpu;
+pub mod keyboard;
 pub mod memory;
 pub mod screen;
 
@@ -15,6 +16,7 @@ const BG_COLOR: RGB = RGB(0, 0, 0);
 const PX_COLOR: RGB = RGB(51, 255, 51);
 const WINDOW_WIDHT: u32 = 64;
 const WINDOW_HEIGHT: u32 = 32;
+const KEYBOARD_SIZE: usize = 16;
 const FONTSET_ADDR: u16 = 0x50;
 const FONT_SET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -41,6 +43,7 @@ pub struct Machine {
     display: MediaCanvas,
     event: MediaEvent,
     screen: Screen,
+    keyboard: Keyboard,
 }
 
 impl Machine {
@@ -54,6 +57,7 @@ impl Machine {
             display: display,
             event: event,
             screen: Screen::new(),
+            keyboard: Keyboard::new(),
         }
     }
 
@@ -121,8 +125,42 @@ impl Machine {
                     } => {
                         break 'running;
                     }
+
+                    Event::KeyDown {
+                        keycode: Some(keycode),
+                        ..
+                    } => {
+                        self.keyboard.update_down_state(keycode, true);
+                    }
+
+                    Event::KeyUp {
+                        keycode: Some(keycode),
+                        ..
+                    } => self.keyboard.update_down_state(keycode, false),
+
                     _ => {}
                 }
+            }
+
+            self.display.prepare();
+
+            for (y, row) in self.screen.get_pixels().iter().enumerate() {
+                for (x, col) in row.iter().enumerate() {
+                    self.display.set_pixel(x as u32, y as u32, col)
+                }
+            }
+
+            self.display.draw();
+
+            if self.cpu.get_dt() > 0 {
+                sleep(Duration::new(1, 0));
+                self.cpu.dec_dt();
+            }
+
+            if self.cpu.get_st() > 0 {
+                let _ = beep::beep(15000);
+                sleep(Duration::new(10 * self.cpu.get_st() as u64, 0));
+                self.cpu.reset_st();
             }
 
             let first = self.memory.get(self.cpu.get_pc());
@@ -137,15 +175,7 @@ impl Machine {
 
             CPU::run(self, opcode);
 
-            self.display.prepare();
-
-            for (y, row) in self.screen.get_pixels().iter().enumerate() {
-                for (x, col) in row.iter().enumerate() {
-                    self.display.set_pixel(x as u32, y as u32, col)
-                }
-            }
-
-            self.display.draw();
+            println!("opcode: {:#04x}", opcode);
 
             sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
