@@ -1,5 +1,5 @@
 use sdl2::{
-    event::{Event, EventPollIterator, EventWaitIterator},
+    event::{EventPollIterator, EventWaitIterator},
     EventPump, Sdl,
 };
 

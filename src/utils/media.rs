@@ -29,7 +29,7 @@ fn generate_window(context: &Sdl, width: u32, height: u32) -> Window {
     let video_subsystem = context.video().expect("couldn't get SDL video subsystem");
 
     video_subsystem
-        .window("rchip", width, height)
+        .window("chipsy", width, height)
         .position_centered()
         .opengl()
         .build()

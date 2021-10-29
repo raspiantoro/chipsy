@@ -1,4 +1,4 @@
-use rchip::{machine::Machine, rom::RomBytes};
+use chipsy::{machine::Machine, rom::RomBytes};
 
 #[test]
 fn test_run() {

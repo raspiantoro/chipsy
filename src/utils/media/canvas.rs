@@ -12,8 +12,6 @@ impl MediaCanvas {
     pub fn new(window: Window, bg_color: RGB, px_color: RGB, scale: u32) -> Self {
         let mut canvas = window
             .into_canvas()
-            .target_texture()
-            .present_vsync()
             .build()
             .expect("failed to convert window into canvas");
 
@@ -45,20 +43,6 @@ impl MediaCanvas {
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, value: &u8) {
-        // if *value == 1 {
-        //     self.canvas.set_draw_color(Color::RGB(
-        //         self.px_color.0,
-        //         self.px_color.1,
-        //         self.px_color.2,
-        //     ));
-        // } else {
-        //     self.canvas.set_draw_color(Color::RGB(
-        //         self.bg_color.0,
-        //         self.bg_color.1,
-        //         self.bg_color.2,
-        //     ));
-        // }
-
         if *value == 1 {
             let _ = self.canvas.fill_rect(Rect::new(
                 (x * self.scale) as i32,

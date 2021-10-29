@@ -11,9 +11,9 @@ pub mod keyboard;
 pub mod memory;
 pub mod screen;
 
-const UI_SCALE: u32 = 20;
+const UI_SCALE: u32 = 15;
 const BG_COLOR: RGB = RGB(0, 0, 0);
-const PX_COLOR: RGB = RGB(51, 255, 51);
+const PX_COLOR: RGB = RGB(233, 68, 43);
 const WINDOW_WIDHT: u32 = 64;
 const WINDOW_HEIGHT: u32 = 32;
 const KEYBOARD_SIZE: usize = 16;
@@ -153,13 +153,13 @@ impl Machine {
             self.display.draw();
 
             if self.cpu.get_dt() > 0 {
-                sleep(Duration::new(1, 0));
+                sleep(Duration::new(0, 1_000_000_000u32 / 600));
                 self.cpu.dec_dt();
             }
 
             if self.cpu.get_st() > 0 {
-                let _ = beep::beep(15000);
-                sleep(Duration::new(10 * self.cpu.get_st() as u64, 0));
+                // let _ = beep::beep(440);
+                // sleep(Duration::new(0, 1_000_000_000u32 / self.cpu.get_st() as u32));
                 self.cpu.reset_st();
             }
 
@@ -174,10 +174,6 @@ impl Machine {
             }
 
             CPU::run(self, opcode);
-
-            println!("opcode: {:#04x}", opcode);
-
-            sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
 }

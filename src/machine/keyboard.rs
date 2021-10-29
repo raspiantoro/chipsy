@@ -1,3 +1,5 @@
+use std::char::from_digit;
+
 use sdl2::keyboard::Keycode;
 
 use super::KEYBOARD_SIZE;
@@ -9,22 +11,22 @@ pub struct Keyboard {
 impl Keyboard {
     pub fn new() -> Self {
         let keys = [
-            Key::new(Keycode::Num1),
-            Key::new(Keycode::Num2),
-            Key::new(Keycode::Num3),
-            Key::new(Keycode::Num4),
-            Key::new(Keycode::Q),
-            Key::new(Keycode::W),
-            Key::new(Keycode::E),
-            Key::new(Keycode::R),
-            Key::new(Keycode::A),
-            Key::new(Keycode::S),
-            Key::new(Keycode::D),
-            Key::new(Keycode::F),
-            Key::new(Keycode::Z),
-            Key::new(Keycode::X),
-            Key::new(Keycode::C),
-            Key::new(Keycode::V),
+            Key::new(Keycode::Num1, Keycode::Num1),
+            Key::new(Keycode::Num2, Keycode::Num2),
+            Key::new(Keycode::Num3, Keycode::Num3),
+            Key::new(Keycode::Num4, Keycode::C),
+            Key::new(Keycode::Q, Keycode::Num4),
+            Key::new(Keycode::W, Keycode::Num5),
+            Key::new(Keycode::E, Keycode::Num6),
+            Key::new(Keycode::R, Keycode::D),
+            Key::new(Keycode::A, Keycode::Num7),
+            Key::new(Keycode::S, Keycode::Num8),
+            Key::new(Keycode::D, Keycode::Num9),
+            Key::new(Keycode::F, Keycode::E),
+            Key::new(Keycode::Z, Keycode::A),
+            Key::new(Keycode::X, Keycode::Num0),
+            Key::new(Keycode::C, Keycode::B),
+            Key::new(Keycode::V, Keycode::F),
         ];
 
         Keyboard { keys }
@@ -32,20 +34,35 @@ impl Keyboard {
 
     pub fn update_down_state(&mut self, keycode: Keycode, down: bool) {
         for key in self.keys.iter_mut() {
-            if key.keycode == keycode {
+            if key.map_key == keycode {
                 key.down = down;
             }
         }
     }
 
-    pub fn key_is_down(&self, index: usize) -> bool {
-        self.keys[index].down
+    pub fn key_is_down(&self, chip_key: i32) -> bool {
+        let ascii_key = match from_digit(chip_key as u32, 10) {
+            Some(c) => c,
+            None => return false,
+        };
+
+        match Keycode::from_i32(ascii_key as i32) {
+            Some(some_key) => {
+                for key in self.keys.iter() {
+                    if key.chip_key == some_key {
+                        return key.down;
+                    }
+                }
+                return false;
+            }
+            None => return false,
+        }
     }
 
-    pub fn get_key_index(&self, keycode: Keycode) -> i8 {
-        for (i, key) in self.keys.iter().enumerate() {
-            if key.keycode == keycode {
-                return i as i8;
+    pub fn get_chip_key(&self, map_key: Keycode) -> i8 {
+        for key in self.keys.iter() {
+            if key.map_key == map_key {
+                return key.chip_key as i8;
             }
         }
 
@@ -54,23 +71,17 @@ impl Keyboard {
 }
 
 struct Key {
-    keycode: Keycode,
+    map_key: Keycode,
+    chip_key: Keycode,
     down: bool,
 }
 
 impl Key {
-    fn new(keycode: Keycode) -> Self {
+    fn new(map_key: Keycode, chip_key: Keycode) -> Self {
         Key {
-            keycode,
+            map_key,
+            chip_key,
             down: false,
         }
     }
-
-    // pub fn get_keycode(&self) -> Keycode {
-    //     self.keycode
-    // }
-
-    // pub fn update_state(&mut self, down: bool) {
-    //     self.down = down;
-    // }
 }

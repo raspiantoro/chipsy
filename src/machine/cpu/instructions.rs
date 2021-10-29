@@ -1,15 +1,8 @@
 use rand::Rng;
-use sdl2::{
-    event::{Event, EventType},
-    sys::keycode,
-};
+use sdl2::event::Event;
 
 use crate::{
-    machine::{
-        keyboard::{self, Keyboard},
-        memory::Memory,
-        Machine, FONTSET_ADDR,
-    },
+    machine::{keyboard::Keyboard, memory::Memory, Machine, FONTSET_ADDR},
     utils::media::event::MediaEvent,
 };
 use std::borrow::{Borrow, BorrowMut};
@@ -93,7 +86,10 @@ pub fn execute(machine: &mut Machine, opcode: u16) {
         (6, _, _, _) => cpu.v[x] = kk,
 
         // 7xkk - ADD Vx, byte. Set Vx = Vx + kk
-        (7, _, _, _) => cpu.v[x] += kk,
+        (7, _, _, _) => {
+            let (val, _) = cpu.v[x].overflowing_add(kk);
+            cpu.v[x] = val;
+        }
 
         // arithmetic instructions
         (8, _, _, _) => arithmetic(cpu, x, y, l),
@@ -225,7 +221,7 @@ fn keyboards(cpu: &mut CPU, keyboard: &Keyboard, x: usize, y: usize, l: u8) {
         // Ex9E - SKP Vx. Skip next instruction if key with the value of Vx is pressed.
         // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
         (9, 0xe) => {
-            if keyboard.key_is_down(cpu.v[x] as usize) {
+            if keyboard.key_is_down(cpu.v[x] as i32) {
                 cpu.pc += 2;
             }
         }
@@ -233,7 +229,7 @@ fn keyboards(cpu: &mut CPU, keyboard: &Keyboard, x: usize, y: usize, l: u8) {
         // ExA1 - SKNP Vx. Skip next instruction if key with the value of Vx is not pressed.
         // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
         (0xa, 1) => {
-            if !keyboard.key_is_down(cpu.v[x] as usize) {
+            if !keyboard.key_is_down(cpu.v[x] as i32) {
                 cpu.pc += 2;
             }
         }
@@ -259,15 +255,13 @@ fn interpreter_stuff(
         // Fx0A - LD Vx, K. Wait for a key press, store the value of the key in Vx.
         // All execution stops until a key is pressed, then the value of that key is stored in Vx.
         (0, 0xa) => {
-            println!("wait event");
             'running: for evt in event.wait_event() {
                 match evt {
                     Event::KeyDown {
                         keycode: Some(keycode),
                         ..
                     } => {
-                        println!("Key: {}", keycode);
-                        cpu.v[x] = keyboard.get_key_index(keycode) as u8;
+                        cpu.v[x] = keyboard.get_chip_key(keycode) as u8;
 
                         break 'running;
                     }
@@ -292,7 +286,7 @@ fn interpreter_stuff(
 
         // Fx29 - LD F, Vx. Set I = location of sprite for digit Vx.
         // The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
-        (2, 9) => cpu.i = cpu.v[x] as u16 + FONTSET_ADDR,
+        (2, 9) => cpu.i = (cpu.v[x] as u16 * 5) + FONTSET_ADDR,
 
         // Fx33 - LD B, Vx. Store BCD representation of Vx in memory locations I, I+1, and I+2.
         // The interpreter takes the decimal value of Vx,
