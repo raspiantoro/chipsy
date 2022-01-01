@@ -1,87 +1,86 @@
-use std::char::from_digit;
+pub const KEYBOARD_SIZE: usize = 16;
 
-use sdl2::keyboard::Keycode;
-
-use super::KEYBOARD_SIZE;
-
-pub struct Keyboard {
-    keys: [Key; KEYBOARD_SIZE],
+#[derive(PartialEq, Clone, Copy)]
+pub enum Key {
+    Key0,
+    Key1,
+    Key2,
+    Key3,
+    Key4,
+    Key5,
+    Key6,
+    Key7,
+    Key8,
+    Key9,
+    KeyA,
+    KeyB,
+    KeyC,
+    KeyD,
+    KeyE,
+    KeyF,
+    Unknown,
 }
 
-impl Keyboard {
-    pub fn new() -> Self {
-        let keys = [
-            Key::new(Keycode::Num1, Keycode::Num1),
-            Key::new(Keycode::Num2, Keycode::Num2),
-            Key::new(Keycode::Num3, Keycode::Num3),
-            Key::new(Keycode::Num4, Keycode::C),
-            Key::new(Keycode::Q, Keycode::Num4),
-            Key::new(Keycode::W, Keycode::Num5),
-            Key::new(Keycode::E, Keycode::Num6),
-            Key::new(Keycode::R, Keycode::D),
-            Key::new(Keycode::A, Keycode::Num7),
-            Key::new(Keycode::S, Keycode::Num8),
-            Key::new(Keycode::D, Keycode::Num9),
-            Key::new(Keycode::F, Keycode::E),
-            Key::new(Keycode::Z, Keycode::A),
-            Key::new(Keycode::X, Keycode::Num0),
-            Key::new(Keycode::C, Keycode::B),
-            Key::new(Keycode::V, Keycode::F),
-        ];
-
-        Keyboard { keys }
-    }
-
-    pub fn update_down_state(&mut self, keycode: Keycode, down: bool) {
-        for key in self.keys.iter_mut() {
-            if key.map_key == keycode {
-                key.down = down;
-            }
-        }
-    }
-
-    pub fn key_is_down(&self, chip_key: i32) -> bool {
-        let ascii_key = match from_digit(chip_key as u32, 10) {
-            Some(c) => c,
-            None => return false,
+impl From<u8> for Key {
+    fn from(orig: u8) -> Self {
+        let key = match orig {
+            0 => Self::Key0,
+            1 => Self::Key1,
+            2 => Self::Key2,
+            3 => Self::Key3,
+            4 => Self::Key4,
+            5 => Self::Key5,
+            6 => Self::Key6,
+            7 => Self::Key7,
+            8 => Self::Key8,
+            9 => Self::Key9,
+            10 => Self::KeyA,
+            11 => Self::KeyB,
+            12 => Self::KeyC,
+            13 => Self::KeyD,
+            14 => Self::KeyE,
+            15 => Self::KeyF,
+            _ => Self::Unknown,
         };
 
-        match Keycode::from_i32(ascii_key as i32) {
-            Some(some_key) => {
-                for key in self.keys.iter() {
-                    if key.chip_key == some_key {
-                        return key.down;
-                    }
-                }
-                return false;
-            }
-            None => return false,
-        }
-    }
-
-    pub fn get_chip_key(&self, map_key: Keycode) -> i8 {
-        for key in self.keys.iter() {
-            if key.map_key == map_key {
-                return key.chip_key as i8;
-            }
-        }
-
-        return -1;
+        key
     }
 }
 
-struct Key {
-    map_key: Keycode,
-    chip_key: Keycode,
-    down: bool,
+impl Into<i8> for Key {
+    fn into(self) -> i8 {
+        let key_number = match self {
+            Key::Key0 => 0,
+            Key::Key1 => 1,
+            Key::Key2 => 2,
+            Key::Key3 => 3,
+            Key::Key4 => 4,
+            Key::Key5 => 5,
+            Key::Key6 => 6,
+            Key::Key7 => 7,
+            Key::Key8 => 8,
+            Key::Key9 => 9,
+            Key::KeyA => 10,
+            Key::KeyB => 11,
+            Key::KeyC => 12,
+            Key::KeyD => 13,
+            Key::KeyE => 14,
+            Key::KeyF => 15,
+            Key::Unknown => -1,
+        };
+
+        key_number
+    }
 }
 
-impl Key {
-    fn new(map_key: Keycode, chip_key: Keycode) -> Self {
-        Key {
-            map_key,
-            chip_key,
-            down: false,
-        }
-    }
+pub enum Action {
+    KeyUp,
+    KeyDown,
+}
+
+pub trait Keyboard {
+    fn scan(&self);
+    fn wait(&self) -> Key;
+    fn quit(&self) -> bool;
+    fn key_is_down(&self, key: Key) -> bool;
 }

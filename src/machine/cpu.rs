@@ -1,5 +1,5 @@
-use self::instructions::execute;
-use super::Machine;
+use self::instructions::eval;
+use super::{display::Display, keyboard::Keyboard, Machine};
 
 mod instructions;
 
@@ -56,7 +56,11 @@ impl CPU {
         self.pc += 2;
     }
 
-    pub fn run(machine: &mut Machine, opcode: u16) {
-        execute(machine, opcode);
+    pub fn execute<D, K>(machine: &mut Machine<D, K>, opcode: u16)
+    where
+        D: Display,
+        K: Keyboard,
+    {
+        eval(machine, opcode);
     }
 }

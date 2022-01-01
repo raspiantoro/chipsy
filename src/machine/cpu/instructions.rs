@@ -1,20 +1,18 @@
+use crate::machine::{display::Display, keyboard::Keyboard, memory::Memory, Machine, FONTSET_ADDR};
 use rand::Rng;
-use sdl2::event::Event;
-
-use crate::{
-    machine::{keyboard::Keyboard, memory::Memory, Machine, FONTSET_ADDR},
-    utils::media::event::MediaEvent,
-};
-use std::borrow::{Borrow, BorrowMut};
+use std::{borrow::BorrowMut, rc::Rc};
 
 use super::CPU;
 
-pub fn execute(machine: &mut Machine, opcode: u16) {
+pub fn eval<D, K>(machine: &mut Machine<D, K>, opcode: u16)
+where
+    D: Display,
+    K: Keyboard,
+{
     let cpu = machine.cpu.borrow_mut();
     let memory = machine.memory.borrow_mut();
-    let screen = machine.screen.borrow_mut();
-    let keyboard = machine.keyboard.borrow();
-    let event = machine.event.borrow_mut();
+    let display = machine.display.clone();
+    let keyboard = machine.keyboard.clone();
 
     // notation -> hxyl
     let h: u8 = (opcode >> 12) as u8;
@@ -30,7 +28,7 @@ pub fn execute(machine: &mut Machine, opcode: u16) {
 
     match (h, x, y, l) {
         // 00E0 - CLS
-        (0, 0, 0xe, 0) => screen.clear(),
+        (0, 0, 0xe, 0) => display.clear(),
 
         // 00EE - RET. Return from a subroutine.
         // The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer
@@ -121,7 +119,7 @@ pub fn execute(machine: &mut Machine, opcode: u16) {
         (0xd, _, _, _) => {
             cpu.v[0xf] = 0;
             let sprites = memory.get_range(cpu.i as usize, l as usize);
-            if screen.set_pixels(
+            if display.update_pixels(
                 cpu.v_reg_get(x) as usize,
                 cpu.v_reg_get(y) as usize,
                 sprites,
@@ -132,7 +130,7 @@ pub fn execute(machine: &mut Machine, opcode: u16) {
 
         (0xe, _, _, _) => keyboards(cpu, keyboard, x, y, l),
 
-        (0xf, _, _, _) => interpreter_stuff(cpu, memory, event, keyboard, x, y, l),
+        (0xf, _, _, _) => interpreter_stuff(cpu, memory, keyboard, x, y, l),
 
         // invalid opcode
         (_, _, _, _) => panic!("unknown instruction"),
@@ -216,12 +214,12 @@ fn arithmetic(cpu: &mut CPU, x: usize, y: usize, l: u8) {
     }
 }
 
-fn keyboards(cpu: &mut CPU, keyboard: &Keyboard, x: usize, y: usize, l: u8) {
+fn keyboards<K: Keyboard>(cpu: &mut CPU, keyboard: Rc<K>, x: usize, y: usize, l: u8) {
     match (y, l) {
         // Ex9E - SKP Vx. Skip next instruction if key with the value of Vx is pressed.
         // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
         (9, 0xe) => {
-            if keyboard.key_is_down(cpu.v[x] as i32) {
+            if keyboard.key_is_down(cpu.v[x].into()) {
                 cpu.pc += 2;
             }
         }
@@ -229,7 +227,7 @@ fn keyboards(cpu: &mut CPU, keyboard: &Keyboard, x: usize, y: usize, l: u8) {
         // ExA1 - SKNP Vx. Skip next instruction if key with the value of Vx is not pressed.
         // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
         (0xa, 1) => {
-            if !keyboard.key_is_down(cpu.v[x] as i32) {
+            if !keyboard.key_is_down(cpu.v[x].into()) {
                 cpu.pc += 2;
             }
         }
@@ -238,11 +236,10 @@ fn keyboards(cpu: &mut CPU, keyboard: &Keyboard, x: usize, y: usize, l: u8) {
     }
 }
 
-fn interpreter_stuff(
+fn interpreter_stuff<K: Keyboard>(
     cpu: &mut CPU,
     memory: &mut Memory,
-    event: &mut MediaEvent,
-    keyboard: &Keyboard,
+    keyboard: Rc<K>,
     x: usize,
     y: usize,
     l: u8,
@@ -255,21 +252,8 @@ fn interpreter_stuff(
         // Fx0A - LD Vx, K. Wait for a key press, store the value of the key in Vx.
         // All execution stops until a key is pressed, then the value of that key is stored in Vx.
         (0, 0xa) => {
-            'running: for evt in event.wait_event() {
-                match evt {
-                    Event::KeyDown {
-                        keycode: Some(keycode),
-                        ..
-                    } => {
-                        cpu.v[x] = keyboard.get_chip_key(keycode) as u8;
-
-                        break 'running;
-                    }
-                    _ => {
-                        continue;
-                    }
-                }
-            }
+            let key: i8 = keyboard.wait().into();
+            cpu.v[x] = key as u8;
         }
 
         // Fx15 - LD DT, Vx. Set delay timer = Vx.
