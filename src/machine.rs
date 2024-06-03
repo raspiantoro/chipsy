@@ -27,23 +27,23 @@ const FONT_SET: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-pub struct Machine<D, K>
+pub struct Machine<'a, D, K>
 where
     D: Display,
     K: Keyboard,
 {
     cpu: CPU,
     memory: Memory,
-    display: Rc<D>,
-    keyboard: Rc<K>,
+    display: &'a mut D,
+    keyboard: &'a K,
 }
 
-impl<D, K> Machine<D, K>
+impl<'a, D, K> Machine<'a, D, K>
 where
     D: Display,
     K: Keyboard,
 {
-    pub fn new(display: Rc<D>, keyboard: Rc<K>) -> Self {
+    pub fn new(display: &'a mut D, keyboard: &'a K) -> Self {
         Machine {
             cpu: CPU::default(),
             memory: Memory::new(),

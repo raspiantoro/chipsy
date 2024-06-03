@@ -11,8 +11,8 @@ where
 {
     let cpu = machine.cpu.borrow_mut();
     let memory = machine.memory.borrow_mut();
-    let display = machine.display.clone();
-    let keyboard = machine.keyboard.clone();
+    let display = machine.display.borrow_mut();
+    let keyboard = machine.keyboard;
 
     // notation -> hxyl
     let h: u8 = (opcode >> 12) as u8;
@@ -214,7 +214,7 @@ fn arithmetic(cpu: &mut CPU, x: usize, y: usize, l: u8) {
     }
 }
 
-fn keyboards<K: Keyboard>(cpu: &mut CPU, keyboard: Rc<K>, x: usize, y: usize, l: u8) {
+fn keyboards<K: Keyboard>(cpu: &mut CPU, keyboard: &K, x: usize, y: usize, l: u8) {
     match (y, l) {
         // Ex9E - SKP Vx. Skip next instruction if key with the value of Vx is pressed.
         // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
@@ -239,7 +239,7 @@ fn keyboards<K: Keyboard>(cpu: &mut CPU, keyboard: Rc<K>, x: usize, y: usize, l:
 fn interpreter_stuff<K: Keyboard>(
     cpu: &mut CPU,
     memory: &mut Memory,
-    keyboard: Rc<K>,
+    keyboard: &K,
     x: usize,
     y: usize,
     l: u8,

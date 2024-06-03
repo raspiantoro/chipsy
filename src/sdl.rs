@@ -14,8 +14,8 @@ pub mod keyboard;
 pub struct RGB(pub u8, pub u8, pub u8);
 
 pub struct Context {
-    canvas: Rc<Canvas>,
-    keyboard: Rc<keyboard::Keyboard>,
+    canvas: Canvas,
+    keyboard: keyboard::Keyboard,
 }
 
 impl Context {
@@ -42,19 +42,22 @@ impl Context {
         let canvas = Canvas::new(pixels, window, canvas_bg, canvas_fg, scale)?;
 
         let keyboard = Keyboard::new(&sdl_context)?;
-        let keyboard = Rc::new(keyboard);
 
         Ok(Context {
-            canvas: Rc::new(canvas),
+            canvas: canvas,
             keyboard,
         })
     }
 
-    pub fn get_canvas(&self) -> Rc<Canvas> {
-        self.canvas.clone()
+    pub fn extract_borrow(&mut self) -> (&mut Canvas, &Keyboard){
+        (&mut self.canvas, &self.keyboard)
     }
 
-    pub fn get_keyboard(&self) -> Rc<Keyboard> {
-        self.keyboard.clone()
-    }
+    // pub fn get_canvas(&mut self) -> &mut Canvas {
+    //     &mut self.canvas
+    // }
+
+    // pub fn get_keyboard(&self) -> Rc<Keyboard> {
+    //     self.keyboard.clone()
+    // }
 }

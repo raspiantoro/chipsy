@@ -1,24 +1,25 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use super::{error::SdlError, RGB};
 use chipsy::machine::display::{Display, Pixels};
 use sdl2::{pixels::Color, rect::Rect, render, video::Window};
 
+// #[derive(Clone)]
 pub struct Canvas {
     canvas: RefCell<render::Canvas<Window>>,
     bg_color: RGB,
     fg_color: RGB,
     scale: u32,
-    pixels: Rc<RefCell<Pixels>>,
+    pixels: Pixels,
 }
 
 impl Display for Canvas {
-    fn get_pixels(&self) -> Rc<RefCell<Pixels>> {
-        self.pixels.clone()
+    fn get_pixels(&mut self) -> &mut Pixels {
+        &mut self.pixels
     }
 
     fn render(&self) {
-        let pixels = self.pixels.borrow();
+        let pixels = &self.pixels;
         let mut canvas = self.canvas.borrow_mut();
 
         canvas.set_draw_color(Color::RGB(
@@ -73,7 +74,7 @@ impl Canvas {
             bg_color,
             fg_color,
             scale,
-            pixels: Rc::new(RefCell::new(pixels)),
+            pixels: pixels,
         })
     }
 }
