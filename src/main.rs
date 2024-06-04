@@ -1,4 +1,4 @@
-use chipsy::{machine::Machine, rom};
+use chipsy::{machine::Machine, rom, sound_generator::triangle::TriangleWave};
 use sdl::{Context, RGB};
 
 mod sdl;
@@ -31,6 +31,9 @@ fn main() {
         WINDOW_WIDHT,
         WINDOW_HEIGHT,
         SCALE,
+        |spec| {
+            TriangleWave::new(220.0 / spec.freq as f32, 0.25)
+        }
     )
     .unwrap();
 

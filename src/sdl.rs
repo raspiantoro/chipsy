@@ -3,9 +3,9 @@ use self::{
     error::{SdlError, WindowError},
     keyboard::Keyboard,
 };
-use audio::{AudioPlayback, SquareWave};
+use audio::AudioPlayback;
 use chipsy::machine::display::Pixels;
-use sdl2::audio::AudioSpecDesired;
+use sdl2::audio::{AudioCallback, AudioSpec, AudioSpecDesired};
 
 pub mod canvas;
 mod error;
@@ -15,14 +15,14 @@ pub mod audio;
 #[derive(Default)]
 pub struct RGB(pub u8, pub u8, pub u8);
 
-pub struct Context {
+pub struct Context<T: AudioCallback> {
     canvas: Canvas,
     keyboard: keyboard::Keyboard,
-    audio: AudioPlayback<SquareWave>
+    audio: AudioPlayback<T>
 }
 
-impl Context {
-    pub fn new(
+impl<T: AudioCallback> Context<T> {
+    pub fn new<F: FnOnce(AudioSpec) -> T>(
         window_title: &str,
         pixels: Pixels,
         canvas_bg: RGB,
@@ -30,6 +30,7 @@ impl Context {
         canvas_width: u32,
         canvas_height: u32,
         scale: u32,
+        sound_generator_callback: F 
     ) -> Result<Self, SdlError> {
         let sdl_context = sdl2::init().map_err(SdlError::ContextError)?;
 
@@ -54,10 +55,8 @@ impl Context {
 
         let keyboard = Keyboard::new(&sdl_context)?;
 
-        let audio = AudioPlayback::new(audio_subsystem, &desired_spec, |spec| {
-            SquareWave::new(440.0 / spec.freq as f32, 0.0, 0.25)
-        });
-
+        let audio = AudioPlayback::new(audio_subsystem, &desired_spec, sound_generator_callback);
+        
         Ok(Context {
             canvas: canvas,
             keyboard,
@@ -65,7 +64,7 @@ impl Context {
         })
     }
 
-    pub fn extract_borrow(&mut self) -> (&mut Canvas, &Keyboard, &AudioPlayback<SquareWave>){
+    pub fn extract_borrow(&mut self) -> (&mut Canvas, &Keyboard, &AudioPlayback<T>){
         (&mut self.canvas, &self.keyboard, &self.audio)
     }
 }
