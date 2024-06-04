@@ -1,13 +1,14 @@
-use crate::machine::{display::Display, keyboard::Keyboard, memory::Memory, Machine, FONTSET_ADDR};
+use crate::machine::{audio::Audio, display::Display, keyboard::Keyboard, memory::Memory, Machine, FONTSET_ADDR};
 use rand::Rng;
-use std::{borrow::BorrowMut, rc::Rc};
+use std::borrow::BorrowMut;
 
 use super::CPU;
 
-pub fn eval<D, K>(machine: &mut Machine<D, K>, opcode: u16)
+pub fn eval<D, K, A>(machine: &mut Machine<D, K, A>, opcode: u16)
 where
     D: Display,
     K: Keyboard,
+    A: Audio
 {
     let cpu = machine.cpu.borrow_mut();
     let memory = machine.memory.borrow_mut();

@@ -1,11 +1,14 @@
+use audio::Audio;
+
 use self::{cpu::CPU, display::Display, keyboard::Keyboard, memory::Memory};
-use crate::rom::RomBytes;
-use std::{rc::Rc, thread::sleep, time::Duration};
+use crate::{rom::RomBytes, timer::TIMER};
+use std::{thread::sleep, time::Duration};
 
 pub mod cpu;
 pub mod display;
 pub mod keyboard;
 pub mod memory;
+pub mod audio;
 
 const FONTSET_ADDR: u16 = 0x50;
 const FONT_SET: [u8; 80] = [
@@ -27,28 +30,32 @@ const FONT_SET: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-pub struct Machine<'a, D, K>
+pub struct Machine<'a, D, K, A>
 where
     D: Display,
     K: Keyboard,
+    A: Audio
 {
     cpu: CPU,
     memory: Memory,
     display: &'a mut D,
     keyboard: &'a K,
+    audio: &'a A
 }
 
-impl<'a, D, K> Machine<'a, D, K>
+impl<'a, D, K, A> Machine<'a, D, K, A>
 where
     D: Display,
     K: Keyboard,
+    A: Audio
 {
-    pub fn new(display: &'a mut D, keyboard: &'a K) -> Self {
+    pub fn new(display: &'a mut D, keyboard: &'a K, audio: &'a A) -> Self {
         Machine {
             cpu: CPU::default(),
             memory: Memory::new(),
             display: display,
             keyboard: keyboard,
+            audio: audio
         }
     }
 
@@ -58,7 +65,7 @@ where
         let mut counter = 0;
 
         while counter < FONT_SET.len() {
-            self.mem_assign((FONTSET_ADDR as usize) + counter, FONT_SET[counter]);
+            self.memory.assign((FONTSET_ADDR as usize) + counter, FONT_SET[counter]);
             counter += 1;
         }
 
@@ -69,13 +76,8 @@ where
 
     fn load_program(&mut self, rom_data: RomBytes) {
         for (i, byte) in rom_data.into_iter().enumerate() {
-            self.mem_assign(self.cpu.get_pc() + i, byte);
+            self.memory.assign(self.cpu.get_pc() + i, byte);
         }
-    }
-
-    // temp method for simplicity
-    pub fn mem_assign(&mut self, address: usize, value: u8) {
-        self.memory.assign(address, value)
     }
 
     pub fn v_reg_set(&mut self, index: usize, value: u8) {
@@ -84,11 +86,6 @@ where
 
     pub fn v_reg_get(&self, index: usize) -> u8 {
         self.cpu.v_reg_get(index)
-    }
-
-    // should be delete after tests
-    pub fn i_reg_set(&mut self, value: u16) {
-        self.cpu.i_reg_set(value);
     }
 
     pub fn run(&mut self) {
@@ -106,9 +103,23 @@ where
                 self.cpu.dec_dt();
             }
 
+            let mut timer = TIMER.lock().unwrap();
+
+            match timer.state() {
+                crate::timer::TimerState::Running(remaining) => {
+                    timer.tick();
+
+                    if remaining == 0 {
+                        self.audio.pause();
+                        timer.stop();
+                    }
+                },
+                crate::timer::TimerState::Idle => (),
+            }
+
             if self.cpu.get_st() > 0 {
-                // let _ = beep::beep(440);
-                // sleep(Duration::new(0, 1_000_000_000u32 / self.cpu.get_st() as u32));
+                self.audio.resume();
+                timer.start(Duration::new(0, 1_000_000_000u32 / self.cpu.get_st() as u32));
                 self.cpu.reset_st();
             }
 

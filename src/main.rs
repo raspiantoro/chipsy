@@ -34,15 +34,14 @@ fn main() {
     )
     .unwrap();
 
-    let (canvas, keyboard) = sdl_context.extract_borrow();
+    let (canvas, keyboard, audio) = sdl_context.extract_borrow();
 
-    let mut machine = Machine::new(canvas, keyboard);
+    let mut machine = Machine::new(canvas, keyboard, audio);
 
     let args: Vec<String> = std::env::args().collect();
     let fname = args.get(1).expect(&USAGE);
 
     let rom_data = rom::read(fname);
-    // let rom_data = rom::dummy_rom_data();
 
     machine.init(rom_data);
 
