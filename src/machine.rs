@@ -10,6 +10,7 @@ pub mod keyboard;
 pub mod memory;
 pub mod audio;
 
+const INSTRUCTIONS_PER_FRAME: usize = 10;
 const FONTSET_ADDR: u16 = 0x50;
 const FONT_SET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -29,6 +30,7 @@ const FONT_SET: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
+
 
 pub struct Machine<'a, D, K, A>
 where
@@ -88,52 +90,58 @@ where
         self.cpu.v_reg_get(index)
     }
 
+    fn update_timer(&mut self) {
+        if self.cpu.get_dt() > 0 {
+            self.cpu.dec_dt();
+        }
+
+        let mut timer = TIMER.lock().unwrap();
+
+        match timer.state() {
+            crate::timer::TimerState::Running(remaining) => {
+                timer.tick();
+
+                if remaining == 0 {
+                    self.audio.pause();
+                    timer.stop();
+                }
+            },
+            crate::timer::TimerState::Idle => (),
+        }
+
+        if self.cpu.get_st() > 0 {
+            self.audio.resume();
+            timer.start(Duration::new(0, 1_000_000_000u32 / self.cpu.get_st() as u32 / INSTRUCTIONS_PER_FRAME as u32));
+            self.cpu.reset_st();
+        }
+    }
+
     pub fn run(&mut self) {
         loop {
+            sleep(Duration::new(0, 1_000_000_000u32 / 100));
+
             self.keyboard.scan();
 
             if self.keyboard.quit() {
                 return;
             }
 
+            for _ in 0..INSTRUCTIONS_PER_FRAME {
+                let first = self.memory.get(self.cpu.get_pc());
+                let second = self.memory.get(self.cpu.get_pc() + 1);
+                self.cpu.inc_pc();
+
+                let opcode: u16 = ((first as u16) << 8) | second as u16;
+
+                if opcode == 0 {
+                    return;
+                }
+
+                CPU::execute(self, opcode);
+            }
+
+            self.update_timer();
             self.display.render();
-
-            if self.cpu.get_dt() > 0 {
-                sleep(Duration::new(0, 1_000_000_000u32 / 600));
-                self.cpu.dec_dt();
-            }
-
-            let mut timer = TIMER.lock().unwrap();
-
-            match timer.state() {
-                crate::timer::TimerState::Running(remaining) => {
-                    timer.tick();
-
-                    if remaining == 0 {
-                        self.audio.pause();
-                        timer.stop();
-                    }
-                },
-                crate::timer::TimerState::Idle => (),
-            }
-
-            if self.cpu.get_st() > 0 {
-                self.audio.resume();
-                timer.start(Duration::new(0, 1_000_000_000u32 / self.cpu.get_st() as u32));
-                self.cpu.reset_st();
-            }
-
-            let first = self.memory.get(self.cpu.get_pc());
-            let second = self.memory.get(self.cpu.get_pc() + 1);
-            self.cpu.inc_pc();
-
-            let opcode: u16 = ((first as u16) << 8) | second as u16;
-
-            if opcode == 0 {
-                return;
-            }
-
-            CPU::execute(self, opcode);
         }
     }
 }

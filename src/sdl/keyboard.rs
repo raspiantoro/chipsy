@@ -6,7 +6,7 @@ use sdl2::{event::Event, keyboard::Keycode, EventPump, Sdl};
 
 type MachineKey = machine::keyboard::Key;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum KeyState {
     Up,
     Down,
